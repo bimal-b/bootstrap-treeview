@@ -58,6 +58,8 @@
 		showCheckbox: false,
 		showTags: false,
 		multiSelect: false,
+		
+		template: {},
 
 		// Event handlers
 		onNodeChecked: undefined,
@@ -159,6 +161,7 @@
 			delete options.data;
 		}
 		this.options = $.extend({}, _default.settings, options);
+		this.template = $.extend(this.template, this.options.template);
 
 		this.destroy();
 		this.subscribeEvents();
