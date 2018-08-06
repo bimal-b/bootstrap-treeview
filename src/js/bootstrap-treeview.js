@@ -16,7 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * ========================================================= */
-
 ;(function ($, window, document, undefined) {
 
 	/*global jQuery, console*/
@@ -146,6 +145,10 @@
 			search: $.proxy(this.search, this),
 			clearSearch: $.proxy(this.clearSearch, this)
 		};
+	};
+	
+	Tree.prototype.ensureRange = function (val, min, max) {
+		  return val < min ? min : (val > max ? max : val);
 	};
 
 	Tree.prototype.init = function (options) {
@@ -379,7 +382,6 @@
 			}
 		}
 		else if (!state) {
-
 			// Collapse a node
 			node.state.expanded = false;
 			if (!options.silent) {
@@ -502,8 +504,76 @@
 
 		// Build tree
 		this.buildTree(this.tree, 0);
+		this.$wrapper.sortable({
+			items: '> li:not(:has(.glyphicon-minus))',
+			handle: '.grip',
+			helper: 'clone',
+			axis: 'y',
+			stop: $.proxy(this.sortableStopHandler, this),
+			sort: $.proxy(this.sortableSortHandler, this),
+		});
 	};
-
+	
+	Tree.prototype.sortableSortHandler = function (event, ui) {
+		var level = 0;
+		var prev = ui.placeholder.prevAll(':not(.ui-sortable-placeholder,.ui-sortable-helper):visible:first')
+		if (prev.length){
+			//console.log(prev[0].childNodes[prev[0].childNodes.length - 1].data);
+			var prevLevel = prev.find('.indent').length;
+			var itemLevel = ui.item.find('.indent').length;
+			var itemLevelOffset = Math.trunc((ui.position.left - ui.originalPosition.left) / 20);
+			level = this.ensureRange(itemLevel + itemLevelOffset, 0, prevLevel + 1);
+		}
+		var indents = ui.helper.find('.indent');
+		if (indents.length != level){
+			indents.remove();
+			ui.helper.prepend(this.template.indent.repeat(level));
+		}
+	};
+	
+	Tree.prototype.sortableStopHandler = function (event, ui) {
+		console.log('stop sort');
+		// remove node from old list
+		var node = this.findNode(ui.item);
+		var parent = this.getParent(node);
+		var root = {nodes: this.tree, state: {expanded: false}};
+		var from = parent ? parent : root;  
+		from.nodes.splice(from.nodes.indexOf(node), 1);
+		if (from != root && !from.nodes.length) {
+			from.nodes = undefined;
+			from.state.expanded = false;
+		}
+		
+		// insert into new position
+		var dest = {after: null, to: root};
+		
+		var prevItem = ui.item.prevAll(':not(.ui-sortable-placeholder,.ui-sortable-helper):visible:first');
+		if (prevItem.length){
+			var prevNode = this.findNode(prevItem);
+			var prevLevel = this.getLevel(prevNode);
+			var itemLevel = ui.item.find('.indent').length;
+			var itemLevelOffset = Math.trunc((ui.position.left - ui.originalPosition.left) / 20);
+			var level = this.ensureRange(itemLevel + itemLevelOffset, 0, prevLevel + 1);
+			
+			console.log(level);
+			
+			var positions = [], parent = prevNode, child = null;
+			while (parent) {
+				positions.push({ after: child , to: parent });
+				child = parent;
+				parent = this.getParent(parent);
+			}
+			positions.push({ after: child, to: root });
+			dest = positions.reverse()[level];
+		}
+		if (!dest.to.nodes) dest.to.nodes = [];
+		dest.to.nodes.splice(dest.to.nodes.indexOf(dest.after) + 1, 0, node);
+		dest.to.state.expanded = true;
+		
+		this.setInitialStates({ nodes: this.tree }, 0);
+		this.render();
+	};
+	
 	// Starting from the root node, and recursing down the
 	// structure we build the tree one node at a time
 	Tree.prototype.buildTree = function (nodes, level) {
@@ -547,7 +617,11 @@
 				.append($(_this.template.icon)
 					.addClass(classList.join(' '))
 				);
-
+			
+			treeItem
+				.append($(_this.template.grip)
+					.addClass(node.state.expanded ? 'text-muted' : '')
+				);
 
 			// Add node icon
 			if (_this.options.showIcon) {
@@ -695,7 +769,8 @@
 		indent: '<span class="indent"></span>',
 		icon: '<span class="icon"></span>',
 		link: '<a href="#" style="color:inherit;"></a>',
-		badge: '<span class="badge"></span>'
+		badge: '<span class="badge"></span>',
+		grip: '<span class="glyphicon glyphicon-option-vertical grip"></span>'
 	};
 
 	Tree.prototype.css = '.treeview .list-group-item{cursor:pointer}.treeview span.indent{margin-left:10px;margin-right:10px}.treeview span.icon{width:12px;margin-right:5px}.treeview .node-disabled{color:silver;cursor:not-allowed}'
@@ -718,6 +793,12 @@
 	Tree.prototype.getParent = function (identifier) {
 		var node = this.identifyNode(identifier);
 		return this.nodes[node.parentId];
+	};
+	
+	Tree.prototype.getLevel = function (identifier) {
+		var node = this.identifyNode(identifier), level = 0;
+		while (node = this.getParent(node)) level++;
+		return level;
 	};
 
 	/**
