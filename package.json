@@ -1,30 +1,27 @@
 {
   "name": "bootstrap-treeview",
   "description": "Tree View for Twitter Bootstrap",
-  "version": "1.2.0",
-  "homepage": "https://github.com/jonmiles/bootstrap-treeview",
+  "version": "1.2.2",
+  "homepage": "https://github.com/AntonDumov/bootstrap-treeview",
   "author": {
     "name": "Jonathan Miles"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/jonmiles/bootstrap-treeview.git"
+    "url": "git://github.com/AntonDumov/bootstrap-treeview.git"
   },
   "bugs": {
-    "url": "https://github.com/jonmiles/bootstrap-treeview/issues"
+    "url": "https://github.com/AntonDumov/bootstrap-treeview/issues"
   },
   "licenses": [
     {
       "type": "Apache",
-      "url": "https://github.com/jonmiles/bootstrap-treeview/blob/master/LICENSE"
+      "url": "https://github.com/AntonDumov/bootstrap-treeview/blob/master/LICENSE"
     }
   ],
-  "main": [
-    "dist/bootstrap-treeview.min.js",
-    "dist/bootstrap-treeview.min.css"
-  ],
+  "main": "dist/bootstrap-treeview.min.js",
   "scripts": {
-    "install": "bower install",
+    "dev-install": "bower install",
     "start": "node app",
     "test": "grunt test"
   },
@@ -44,6 +41,10 @@
     "grunt-contrib-qunit": "0.5.x",
     "grunt-contrib-watch": "0.6.x",
     "grunt-contrib-copy": "0.7.x"
+  },
+  "peerDependencies": {
+    "jquery": ">= 1.9.0",
+    "bootstrap": ">= 3.0.0"
   },
   "keywords": [
     "twitter",
